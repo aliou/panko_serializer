@@ -38,6 +38,7 @@ module Panko
           base._descriptor = Panko::SerializationDescriptor.new
 
           base._descriptor.attributes = []
+          base._descriptor.conditional_attributes = {}
           base._descriptor.aliases = {}
 
           base._descriptor.method_fields = []
@@ -54,6 +55,12 @@ module Panko
 
       def attributes(*attrs)
         @_descriptor.attributes.push(*attrs.map { |attr| Attribute.create(attr) }).uniq!
+      end
+
+      def conditional_attributes(*attrs, condition)
+        attrs.each do |attr|
+          @_descriptor.conditional_attributes[attr] = condition
+        end
       end
 
       def aliases(aliases = {})
@@ -104,6 +111,9 @@ module Panko
 
       @serialization_context = SerializationContext.create(options)
       @descriptor = Panko::SerializationDescriptor.build(self.class, options, @serialization_context)
+      @descriptor.conditional_attributes.each do |attr, condition|
+        @_descriptor.attributes.push(Attribute.create(attr)) if condition.call
+      end
       @used = false
     end
 
